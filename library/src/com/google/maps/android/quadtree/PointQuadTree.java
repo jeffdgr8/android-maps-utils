@@ -21,6 +21,7 @@ import com.google.maps.android.geometry.Point;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -50,7 +51,7 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
     /**
      * The elements inside this quad, if any.
      */
-    private List<T> mItems;
+    private HashSet<T> mItems;
 
     /**
      * Maximum depth.
@@ -60,7 +61,7 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
     /**
      * Child quads.
      */
-    private List<PointQuadTree<T>> mChildren = null;
+    private PointQuadTree<T>[] mChildren = null;
 
     /**
      * Creates a new quad tree with specified bounds.
@@ -101,21 +102,21 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
         if (this.mChildren != null) {
             if (y < mBounds.midY) {
                 if (x < mBounds.midX) { // top left
-                    mChildren.get(0).insert(x, y, item);
+                    mChildren[0].insert(x, y, item);
                 } else { // top right
-                    mChildren.get(1).insert(x, y, item);
+                    mChildren[1].insert(x, y, item);
                 }
             } else {
                 if (x < mBounds.midX) { // bottom left
-                    mChildren.get(2).insert(x, y, item);
+                    mChildren[2].insert(x, y, item);
                 } else {
-                    mChildren.get(3).insert(x, y, item);
+                    mChildren[3].insert(x, y, item);
                 }
             }
             return;
         }
         if (mItems == null) {
-            mItems = new ArrayList<T>();
+            mItems = new HashSet<>();
         }
         mItems.add(item);
         if (mItems.size() > MAX_ELEMENTS && mDepth < MAX_DEPTH) {
@@ -127,13 +128,13 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
      * Split this quad.
      */
     private void split() {
-        mChildren = new ArrayList<PointQuadTree<T>>(4);
-        mChildren.add(new PointQuadTree<T>(mBounds.minX, mBounds.midX, mBounds.minY, mBounds.midY, mDepth + 1));
-        mChildren.add(new PointQuadTree<T>(mBounds.midX, mBounds.maxX, mBounds.minY, mBounds.midY, mDepth + 1));
-        mChildren.add(new PointQuadTree<T>(mBounds.minX, mBounds.midX, mBounds.midY, mBounds.maxY, mDepth + 1));
-        mChildren.add(new PointQuadTree<T>(mBounds.midX, mBounds.maxX, mBounds.midY, mBounds.maxY, mDepth + 1));
+        mChildren =  new PointQuadTree[4];
+        mChildren[0] = (new PointQuadTree<T>(mBounds.minX, mBounds.midX, mBounds.minY, mBounds.midY, mDepth + 1));
+        mChildren[1] = (new PointQuadTree<T>(mBounds.midX, mBounds.maxX, mBounds.minY, mBounds.midY, mDepth + 1));
+        mChildren[2] = (new PointQuadTree<T>(mBounds.minX, mBounds.midX, mBounds.midY, mBounds.maxY, mDepth + 1));
+        mChildren[3] = (new PointQuadTree<T>(mBounds.midX, mBounds.maxX, mBounds.midY, mBounds.maxY, mDepth + 1));
 
-        List<T> items = mItems;
+        HashSet<T> items = mItems;
         mItems = null;
 
         for (T item : items) {
@@ -160,15 +161,15 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
         if (this.mChildren != null) {
             if (y < mBounds.midY) {
                 if (x < mBounds.midX) { // top left
-                    return mChildren.get(0).remove(x, y, item);
+                    return mChildren[0].remove(x, y, item);
                 } else { // top right
-                    return mChildren.get(1).remove(x, y, item);
+                    return mChildren[1].remove(x, y, item);
                 }
             } else {
                 if (x < mBounds.midX) { // bottom left
-                    return mChildren.get(2).remove(x, y, item);
+                    return mChildren[2].remove(x, y, item);
                 } else {
-                    return mChildren.get(3).remove(x, y, item);
+                    return mChildren[3].remove(x, y, item);
                 }
             }
         }
@@ -211,7 +212,7 @@ public class PointQuadTree<T extends PointQuadTree.Item> {
             }
         } else if (mItems != null) {
             if (searchBounds.contains(mBounds)) {
-	            results.addAll(mItems);
+                results.addAll(mItems);
             } else {
                 for (T item : mItems) {
                     if (searchBounds.contains(item.getPoint())) {
