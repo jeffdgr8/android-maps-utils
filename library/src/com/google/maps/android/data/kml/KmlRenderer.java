@@ -58,14 +58,16 @@ public class KmlRenderer  extends Renderer {
     private String mDirectoryName;
 
     /* package */ KmlRenderer(GoogleMap map, Context context) {
-        this(map, context, null);
+        this(map, context, null, true);
+        //For backwards compatibility, will use a default info window adapter by default.
     }
 
     /**
-     * @param directoryName See {@link KmlRenderer#mDirectoryName}, or null to only look online.
+     * @param directoryName See {@link KmlRenderer#mDirectoryName}.
+     * @param setDefaultInfoWindowAdapter See {@link Renderer#Renderer(GoogleMap, Context, boolean)} docs.
      */
-    KmlRenderer(GoogleMap map, Context context, String directoryName) {
-        super(map, context);
+    public KmlRenderer(GoogleMap map, Context context, String directoryName, boolean setDefaultInfoWindowAdapter) {
+        super(map, context, setDefaultInfoWindowAdapter);
         mDirectoryName = directoryName;
         mGroundOverlayUrls = new ArrayList<>();
         mMarkerIconsDownloaded = false;
