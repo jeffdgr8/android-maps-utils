@@ -28,10 +28,6 @@
             android:allowBackup="false">
 
         <meta-data
-                android:name="com.google.android.gms.version"
-                android:value="@integer/google_play_services_version" />
-
-        <meta-data
                 android:name="com.google.android.geo.API_KEY"
                 android:value="AIzaSyDCa5WRSMk3CrNSf3y5xbyQTvp1_zwuTtE"/>
 
