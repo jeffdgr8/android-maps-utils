@@ -16,16 +16,18 @@
 
 package com.google.maps.android.clustering.algo;
 
-import com.google.android.libraries.maps.GoogleMap;
+import com.google.android.libraries.maps.model.CameraPosition;
 import com.google.maps.android.clustering.ClusterItem;
 
 /**
- *
  * This algorithm uses map position for clustering, and should be reclustered on map movement
+ *
  * @param <T>
  */
 
-public interface ScreenBasedAlgorithm<T extends ClusterItem> extends Algorithm<T>, GoogleMap.OnCameraChangeListener {
+public interface ScreenBasedAlgorithm<T extends ClusterItem> extends Algorithm<T> {
 
     boolean shouldReclusterOnMapMovement();
+
+    void onCameraChange(CameraPosition position);
 }
