@@ -28,7 +28,7 @@ dependencies {
     // Or, fetch from Maven:
 //    implementation 'com.google.maps.android:android-maps-utils:0.6.1'
 
-    implementation name:'maps-sdk-3.0.0-beta', ext:'aar'
+    implementation 'com.github.jeffdgr8:google-maps-sdk:v3.0.0-beta'
     //implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.core:core-ktx:1.1.0'

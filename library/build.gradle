@@ -27,7 +27,7 @@ android {
 
 dependencies {
     //implementation 'com.google.android.gms:play-services-maps:17.0.0'
-    implementation name:'maps-sdk-3.0.0-beta', ext:'aar'
+    implementation 'com.github.jeffdgr8:google-maps-sdk:v3.0.0-beta'
     implementation 'com.google.android.gms:play-services-basement:17.1.1'
     implementation 'com.google.android.gms:play-services-base:17.1.0'
     implementation 'com.google.android.gms:play-services-gcm:17.0.0'

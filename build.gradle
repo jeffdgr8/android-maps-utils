@@ -13,9 +13,7 @@ allprojects {
     repositories {
         google()
         jcenter()
-        flatDir {
-            dirs new File(rootDir, 'maps-sdk-v3')
-        }
+        maven { url 'https://jitpack.io' }
     }
 }
 
