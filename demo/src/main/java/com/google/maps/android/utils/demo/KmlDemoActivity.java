@@ -35,15 +35,15 @@ public class KmlDemoActivity extends BaseDemoActivity {
         mIsRestore = isRestore;
         try {
             mMap = getMap();
-            //retrieveFileFromResource();
-            retrieveFileFromUrl();
+            retrieveFileFromResource();
+            //retrieveFileFromUrl();
         } catch (Exception e) {
             Log.e("Exception caught", e.toString());
         }
     }
 
     private void retrieveFileFromResource() {
-        new LoadLocalKmlFile(R.raw.campus).execute();
+        new LoadLocalKmlFile(R.raw.doc_large).execute();
     }
 
     private void retrieveFileFromUrl() {
