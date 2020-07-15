@@ -23,6 +23,7 @@ android {
         applicationId "com.google.maps.android.utils.demo"
         minSdkVersion 16
         targetSdkVersion 29
+        multiDexEnabled true
         versionCode 1
         versionName "1.0"
 
@@ -54,6 +55,7 @@ android {
 
 // [START maps_android_utils_install_snippet]
 dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
     // implementation 'com.google.maps.android:android-maps-utils:2.0.3'
     // [START_EXCLUDE silent]
     implementation project(':library')
