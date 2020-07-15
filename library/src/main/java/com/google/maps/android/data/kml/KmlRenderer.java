@@ -23,11 +23,11 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.GroundOverlay;
-import com.google.android.gms.maps.model.GroundOverlayOptions;
-import com.google.android.gms.maps.model.Marker;
+import com.google.android.libraries.maps.GoogleMap;
+import com.google.android.libraries.maps.model.BitmapDescriptor;
+import com.google.android.libraries.maps.model.GroundOverlay;
+import com.google.android.libraries.maps.model.GroundOverlayOptions;
+import com.google.android.libraries.maps.model.Marker;
 import com.google.maps.android.collections.GroundOverlayManager;
 import com.google.maps.android.collections.MarkerManager;
 import com.google.maps.android.collections.PolygonManager;
@@ -320,7 +320,7 @@ public class KmlRenderer extends Renderer {
     }
 
     /**
-     * Adds the marker icon stored in mMarkerIconCache, to the {@link com.google.android.gms.maps.model.Marker}
+     * Adds the marker icon stored in mMarkerIconCache, to the {@link com.google.android.libraries.maps.model.Marker}
      * recursing over multi-geometry placemarks to add icons to all point geometries
      *
      * @param iconUrl    icon url of icon to add to markers

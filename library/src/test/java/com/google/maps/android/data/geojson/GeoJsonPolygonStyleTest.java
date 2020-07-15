@@ -15,9 +15,9 @@
  */
 package com.google.maps.android.data.geojson;
 
-import com.google.android.gms.maps.model.Dot;
-import com.google.android.gms.maps.model.JointType;
-import com.google.android.gms.maps.model.PatternItem;
+import com.google.android.libraries.maps.model.Dot;
+import com.google.android.libraries.maps.model.JointType;
+import com.google.android.libraries.maps.model.PatternItem;
 
 import org.junit.Before;
 import org.junit.Test;

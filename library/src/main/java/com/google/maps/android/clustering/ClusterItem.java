@@ -19,7 +19,7 @@ package com.google.maps.android.clustering;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.android.gms.maps.model.LatLng;
+import com.google.android.libraries.maps.model.LatLng;
 
 /**
  * ClusterItem represents a marker on the map.
