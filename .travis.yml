@@ -29,18 +29,18 @@ env:
   matrix:
     # - API=15 ABI=x86 EMU_CHANNEL="--channel=4" # ERROR: failed to start emulator
     # - API=16 ABI=x86 AUDIO=-no-audio # ERROR: fails with com.android.ddmlib.InstallException: Unknown failure: Error: Unknown option: -d
-    - API=17 ABI=x86 # Works
-    - API=18 ABI=x86 # Works
-    - API=19 ABI=x86 # Works
+    # - API=17 ABI=x86 # Works
+    # - API=18 ABI=x86 # Works
+    # - API=19 ABI=x86 # Works
     # API 20 was Android Wear only
-    - API=21 ABI=x86_64 # Works
-    - API=22 ABI=x86_64 # Works
-    - API=23 ABI=x86_64 # Works
-    - API=24 ABI=x86_64 # Works
-    - API=25 ABI=x86_64 # Works
-    - API=26 ABI=x86_64 # Works
-    - API=27 ABI=x86_64 # Works
-    - API=28 ABI=x86_64 # Works
+    # - API=21 ABI=x86_64 # Works
+    # - API=22 ABI=x86_64 # Works
+    # - API=23 ABI=x86_64 # Works
+    # - API=24 ABI=x86_64 # Works
+    # - API=25 ABI=x86_64 # Works
+    # - API=26 ABI=x86_64 # Works
+    # - API=27 ABI=x86_64 # Works
+    # - API=28 ABI=x86_64 # Works
     - API=29 ABI=x86_64 # Works
 
 before_install:
@@ -69,34 +69,34 @@ install:
   # In our setup, install only runs on matrix entries we want full emulator tests on
   # That only happens currently on linux, so this section can assume linux + emulator is desired
   # Download required emulator tools
-  - echo y | sdkmanager --no_https "platforms;android-$API" >/dev/null # We need the API of the emulator we will run
-  - echo y | sdkmanager --no_https "emulator" >/dev/null
-  - echo y | sdkmanager --no_https "system-images;android-$API;$EMU_FLAVOR;$ABI" >/dev/null # install our emulator
-
-  # Set up KVM on linux for hardware acceleration. Manually here so it only happens for emulator tests, takes ~30s
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install bridge-utils libpulse0 libvirt-bin qemu-kvm virtinst ubuntu-vm-builder
-  - sudo adduser $USER libvirt
-  - sudo adduser $USER kvm
-
-  # Create an Android emulator
-  - echo no | avdmanager create avd --force -n test -k "system-images;android-$API;$EMU_FLAVOR;$ABI" -c 10M
-  - |
-    EMU_PARAMS="-verbose -no-snapshot -no-window -gpu swiftshader_indirect -camera-back none -camera-front none -selinux permissive -qemu -m 2048"
-    EMU_COMMAND="emulator"
-    # This double "sudo" monstrosity is used to have Travis execute the
-    # emulator with its new group permissions and help preserve the rule
-    # of least privilege.
-    sudo -E sudo -u $USER -E bash -c "${ANDROID_HOME}/emulator/${EMU_COMMAND} -avd test ${AUDIO} ${EMU_PARAMS} &"
-  # Wait for emulator to be ready
-  - ./tools/android-wait-for-emulator.sh
-  - adb shell input keyevent 82 &
+#  - echo y | sdkmanager --no_https "platforms;android-$API" >/dev/null # We need the API of the emulator we will run
+#  - echo y | sdkmanager --no_https "emulator" >/dev/null
+#  - echo y | sdkmanager --no_https "system-images;android-$API;$EMU_FLAVOR;$ABI" >/dev/null # install our emulator
+#
+#  # Set up KVM on linux for hardware acceleration. Manually here so it only happens for emulator tests, takes ~30s
+#  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install bridge-utils libpulse0 libvirt-bin qemu-kvm virtinst ubuntu-vm-builder
+#  - sudo adduser $USER libvirt
+#  - sudo adduser $USER kvm
+#
+#  # Create an Android emulator
+#  - echo no | avdmanager create avd --force -n test -k "system-images;android-$API;$EMU_FLAVOR;$ABI" -c 10M
+#  - |
+#    EMU_PARAMS="-verbose -no-snapshot -no-window -gpu swiftshader_indirect -camera-back none -camera-front none -selinux permissive -qemu -m 2048"
+#    EMU_COMMAND="emulator"
+#    # This double "sudo" monstrosity is used to have Travis execute the
+#    # emulator with its new group permissions and help preserve the rule
+#    # of least privilege.
+#    sudo -E sudo -u $USER -E bash -c "${ANDROID_HOME}/emulator/${EMU_COMMAND} -avd test ${AUDIO} ${EMU_PARAMS} &"
+#  # Wait for emulator to be ready
+#  - ./tools/android-wait-for-emulator.sh
+#  - adb shell input keyevent 82 &
 
   # Switch back to our target JDK version to build and run tests
   - JDK="${TARGET_JDK}"
   - source ~/.install-jdk-travis.sh
 
 script:
-  - if [ "$API" != "NONE" ]; then ./gradlew test check connectedCheck -x lint --stacktrace; fi
+  - if [ "$API" != "NONE" ]; then ./gradlew test check jacocoTestReport -x lint --stacktrace; fi
 
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
@@ -117,3 +117,6 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

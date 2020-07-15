@@ -19,10 +19,9 @@ package com.google.maps.android.clustering;
 import android.content.Context;
 import android.os.AsyncTask;
 
-import com.google.android.libraries.maps.GoogleMap;
-import com.google.android.libraries.maps.model.CameraPosition;
-import com.google.android.libraries.maps.model.Marker;
-import com.google.maps.android.collections.MarkerManager;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.Marker;
 import com.google.maps.android.clustering.algo.Algorithm;
 import com.google.maps.android.clustering.algo.NonHierarchicalDistanceBasedAlgorithm;
 import com.google.maps.android.clustering.algo.PreCachingAlgorithmDecorator;
@@ -30,6 +29,7 @@ import com.google.maps.android.clustering.algo.ScreenBasedAlgorithm;
 import com.google.maps.android.clustering.algo.ScreenBasedAlgorithmAdapter;
 import com.google.maps.android.clustering.view.ClusterRenderer;
 import com.google.maps.android.clustering.view.DefaultClusterRenderer;
+import com.google.maps.android.collections.MarkerManager;
 
 import java.util.Collection;
 import java.util.Set;
@@ -39,8 +39,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Groups many items on a map based on zoom level.
  * <p/>
- * ClusterManager should be added to the map as an: <ul> <li>{@link com.google.android.libraries.maps.GoogleMap.OnCameraIdleListener}</li>
- * <li>{@link com.google.android.libraries.maps.GoogleMap.OnMarkerClickListener}</li> </ul>
+ * ClusterManager should be added to the map as an: <ul> <li>{@link com.google.android.gms.maps.GoogleMap.OnCameraIdleListener}</li>
+ * <li>{@link com.google.android.gms.maps.GoogleMap.OnMarkerClickListener}</li> </ul>
  */
 public class ClusterManager<T extends ClusterItem> implements
         GoogleMap.OnCameraIdleListener,
@@ -61,7 +61,9 @@ public class ClusterManager<T extends ClusterItem> implements
 
     private OnClusterItemClickListener<T> mOnClusterItemClickListener;
     private OnClusterInfoWindowClickListener<T> mOnClusterInfoWindowClickListener;
+    private OnClusterInfoWindowLongClickListener<T> mOnClusterInfoWindowLongClickListener;
     private OnClusterItemInfoWindowClickListener<T> mOnClusterItemInfoWindowClickListener;
+    private OnClusterItemInfoWindowLongClickListener<T> mOnClusterItemInfoWindowLongClickListener;
     private OnClusterClickListener<T> mOnClusterClickListener;
 
     public ClusterManager(Context context, GoogleMap map) {
@@ -93,18 +95,20 @@ public class ClusterManager<T extends ClusterItem> implements
         return mMarkerManager;
     }
 
-    public void setRenderer(ClusterRenderer<T> view) {
+    public void setRenderer(ClusterRenderer<T> renderer) {
         mRenderer.setOnClusterClickListener(null);
         mRenderer.setOnClusterItemClickListener(null);
         mClusterMarkers.clear();
         mMarkers.clear();
         mRenderer.onRemove();
-        mRenderer = view;
+        mRenderer = renderer;
         mRenderer.onAdd();
         mRenderer.setOnClusterClickListener(mOnClusterClickListener);
         mRenderer.setOnClusterInfoWindowClickListener(mOnClusterInfoWindowClickListener);
+        mRenderer.setOnClusterInfoWindowLongClickListener(mOnClusterInfoWindowLongClickListener);
         mRenderer.setOnClusterItemClickListener(mOnClusterItemClickListener);
         mRenderer.setOnClusterItemInfoWindowClickListener(mOnClusterItemInfoWindowClickListener);
+        mRenderer.setOnClusterItemInfoWindowLongClickListener(mOnClusterItemInfoWindowLongClickListener);
         cluster();
     }
 
@@ -119,11 +123,17 @@ public class ClusterManager<T extends ClusterItem> implements
     public void setAlgorithm(ScreenBasedAlgorithm<T> algorithm) {
         algorithm.lock();
         try {
-            if (mAlgorithm != null) {
-                algorithm.addItems(mAlgorithm.getItems());
-            }
-
+            final Algorithm<T> oldAlgorithm = getAlgorithm();
             mAlgorithm = algorithm;
+
+            if (oldAlgorithm != null) {
+                oldAlgorithm.lock();
+                try {
+                    algorithm.addItems(oldAlgorithm.getItems());
+                } finally {
+                    oldAlgorithm.unlock();
+                }
+            }
         } finally {
             algorithm.unlock();
         }
@@ -147,53 +157,104 @@ public class ClusterManager<T extends ClusterItem> implements
         return mAlgorithm;
     }
 
+    /**
+     * Removes all items from the cluster manager. After calling this method you must invoke
+     * {@link #cluster()} for the map to be cleared.
+     */
     public void clearItems() {
-        mAlgorithm.lock();
+        final Algorithm<T> algorithm = getAlgorithm();
+        algorithm.lock();
         try {
-            mAlgorithm.clearItems();
+            algorithm.clearItems();
         } finally {
-            mAlgorithm.unlock();
-        }
-    }
-
-    public void addItems(Collection<T> items) {
-        mAlgorithm.lock();
-        try {
-            mAlgorithm.addItems(items);
-        } finally {
-            mAlgorithm.unlock();
-        }
-    }
-
-    public void addItem(T myItem) {
-        mAlgorithm.lock();
-        try {
-            mAlgorithm.addItem(myItem);
-        } finally {
-            mAlgorithm.unlock();
-        }
-    }
-
-    public void removeItems(Collection<T> items) {
-        mAlgorithm.lock();
-        try {
-            mAlgorithm.removeItems(items);
-        } finally {
-            mAlgorithm.unlock();
-        }
-    }
-
-    public void removeItem(T item) {
-        mAlgorithm.lock();
-        try {
-            mAlgorithm.removeItem(item);
-        } finally {
-            mAlgorithm.unlock();
+            algorithm.unlock();
         }
     }
 
     /**
-     * Force a re-cluster. You may want to call this after adding new item(s).
+     * Adds items to clusters. After calling this method you must invoke {@link #cluster()} for the
+     * state of the clusters to be updated on the map.
+     * @param items items to add to clusters
+     * @return true if the cluster manager contents changed as a result of the call
+     */
+    public boolean addItems(Collection<T> items) {
+        final Algorithm<T> algorithm = getAlgorithm();
+        algorithm.lock();
+        try {
+            return algorithm.addItems(items);
+        } finally {
+            algorithm.unlock();
+        }
+    }
+
+    /**
+     * Adds an item to a cluster. After calling this method you must invoke {@link #cluster()} for
+     * the state of the clusters to be updated on the map.
+     * @param myItem item to add to clusters
+     * @return true if the cluster manager contents changed as a result of the call
+     */
+    public boolean addItem(T myItem) {
+        final Algorithm<T> algorithm = getAlgorithm();
+        algorithm.lock();
+        try {
+            return algorithm.addItem(myItem);
+        } finally {
+            algorithm.unlock();
+        }
+    }
+
+    /**
+     * Removes items from clusters. After calling this method you must invoke {@link #cluster()} for
+     * the state of the clusters to be updated on the map.
+     * @param items items to remove from clusters
+     * @return true if the cluster manager contents changed as a result of the call
+     */
+    public boolean removeItems(Collection<T> items) {
+        final Algorithm<T> algorithm = getAlgorithm();
+        algorithm.lock();
+        try {
+            return algorithm.removeItems(items);
+        } finally {
+            algorithm.unlock();
+        }
+    }
+
+    /**
+     * Removes an item from clusters. After calling this method you must invoke {@link #cluster()}
+     * for the state of the clusters to be updated on the map.
+     * @param item item to remove from clusters
+     * @return true if the item was removed from the cluster manager as a result of this call
+     */
+    public boolean removeItem(T item) {
+        final Algorithm<T> algorithm = getAlgorithm();
+        algorithm.lock();
+        try {
+            return algorithm.removeItem(item);
+        } finally {
+            algorithm.unlock();
+        }
+    }
+
+    /**
+     * Updates an item in clusters. After calling this method you must invoke {@link #cluster()} for
+     * the state of the clusters to be updated on the map.
+     * @param item item to update in clusters
+     * @return true if the item was updated in the cluster manager, false if the item is not
+     * contained within the cluster manager and the cluster manager contents are unchanged
+     */
+    public boolean updateItem(T item) {
+        final Algorithm<T> algorithm = getAlgorithm();
+        algorithm.lock();
+        try {
+            return algorithm.updateItem(item);
+        } finally {
+            algorithm.unlock();
+        }
+    }
+
+    /**
+     * Force a re-cluster on the map. You should call this after adding, removing, updating,
+     * or clearing item(s).
      */
     public void cluster() {
         mClusterTaskLock.writeLock().lock();
@@ -245,11 +306,12 @@ public class ClusterManager<T extends ClusterItem> implements
     private class ClusterTask extends AsyncTask<Float, Void, Set<? extends Cluster<T>>> {
         @Override
         protected Set<? extends Cluster<T>> doInBackground(Float... zoom) {
-            mAlgorithm.lock();
+            final Algorithm<T> algorithm = getAlgorithm();
+            algorithm.lock();
             try {
-                return mAlgorithm.getClusters(zoom[0]);
+                return algorithm.getClusters(zoom[0]);
             } finally {
-                mAlgorithm.unlock();
+                algorithm.unlock();
             }
         }
 
@@ -269,12 +331,21 @@ public class ClusterManager<T extends ClusterItem> implements
     }
 
     /**
-     * Sets a callback that's invoked when a Cluster is tapped. Note: For this listener to function,
+     * Sets a callback that's invoked when a Cluster info window is tapped. Note: For this listener to function,
      * the ClusterManager must be added as a info window click listener to the map.
      */
     public void setOnClusterInfoWindowClickListener(OnClusterInfoWindowClickListener<T> listener) {
         mOnClusterInfoWindowClickListener = listener;
         mRenderer.setOnClusterInfoWindowClickListener(listener);
+    }
+
+    /**
+     * Sets a callback that's invoked when a Cluster info window is long-pressed. Note: For this listener to function,
+     * the ClusterManager must be added as a info window click listener to the map.
+     */
+    public void setOnClusterInfoWindowLongClickListener(OnClusterInfoWindowLongClickListener<T> listener) {
+        mOnClusterInfoWindowLongClickListener = listener;
+        mRenderer.setOnClusterInfoWindowLongClickListener(listener);
     }
 
     /**
@@ -293,6 +364,15 @@ public class ClusterManager<T extends ClusterItem> implements
     public void setOnClusterItemInfoWindowClickListener(OnClusterItemInfoWindowClickListener<T> listener) {
         mOnClusterItemInfoWindowClickListener = listener;
         mRenderer.setOnClusterItemInfoWindowClickListener(listener);
+    }
+
+    /**
+     * Sets a callback that's invoked when an individual ClusterItem's Info Window is long-pressed. Note: For this
+     * listener to function, the ClusterManager must be added as a info window click listener to the map.
+     */
+    public void setOnClusterItemInfoWindowLongClickListener(OnClusterItemInfoWindowLongClickListener<T> listener) {
+        mOnClusterItemInfoWindowLongClickListener = listener;
+        mRenderer.setOnClusterItemInfoWindowLongClickListener(listener);
     }
 
     /**
@@ -315,9 +395,26 @@ public class ClusterManager<T extends ClusterItem> implements
     }
 
     /**
+     * Called when a Cluster's Info Window is long clicked.
+     */
+    public interface OnClusterInfoWindowLongClickListener<T extends ClusterItem> {
+        void onClusterInfoWindowLongClick(Cluster<T> cluster);
+    }
+
+    /**
      * Called when an individual ClusterItem is clicked.
      */
     public interface OnClusterItemClickListener<T extends ClusterItem> {
+
+        /**
+         * Called when {@code item} is clicked.
+         *
+         * @param item the item clicked
+         *
+         * @return true if the listener consumed the event (i.e. the default behavior should not
+         * occur), false otherwise (i.e. the default behavior should occur).  The default behavior
+         * is for the camera to move to the marker and an info window to appear.
+         */
         boolean onClusterItemClick(T item);
     }
 
@@ -326,5 +423,12 @@ public class ClusterManager<T extends ClusterItem> implements
      */
     public interface OnClusterItemInfoWindowClickListener<T extends ClusterItem> {
         void onClusterItemInfoWindowClick(T item);
+    }
+
+    /**
+     * Called when an individual ClusterItem's Info Window is long clicked.
+     */
+    public interface OnClusterItemInfoWindowLongClickListener<T extends ClusterItem> {
+        void onClusterItemInfoWindowLongClick(T item);
     }
 }
